@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://use.fontawesome.com/230e98b440.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <title>Text For You</title>
+    <style>
+        /* Previous CSS remains the same */
+        #soup-nav {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 32px;
+            z-index: 9002;
+            font-size: 64px;
+            cursor: pointer;
+        }
+        .soup-title {
+            font-size: 32px;
+        }
+        .soup-desc {
+            font-size: 16px;
+        }
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background-color: #eee;
+            color: #111;
+            text-align: center;
+            font-family: "Open Sans", sans-serif;
+            overflow: hidden;
+        }
+        #soup-container {
+            width: 100%;
+            height: 100%;
+            min-width: 320px;
+            min-height: 480px;
+            position: relative;
+        }
+        .letters-wrap {
+            position: absolute;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .letters-wrap.mutable {
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        .letters-wrap.mutable .letter {
+            position: absolute;
+            left: 0;
+            top: 0;
+            transition: left 2s, top 2s, color 2s;
+            color: "#AAA";
+        }
+        .letters-wrap.mutable .letter.active {
+            color: "#111";
+            z-index: 9001;
+        }
+        .letters-wrap.position-data {
+            top: 50%;
+            left: 50%;
+            visibility: hidden;
+            transform: translate(-50%, -50%);
+        }
+        .segment {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        button {
+            z-index: 9001;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        /* CSS for floating hearts animation - updated size */
+        .heart {
+            position: absolute;
+            bottom: -100px;
+            color: #ff4d6d;
+            font-size: 40px;
+            animation: floatUp 8s linear infinite;
+            opacity: 0.7;
+            z-index: 1;
+        }
+        
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* CSS for floating flowers animation - updated size */
+        .flower {
+            position: absolute;
+            bottom: -100px;
+            font-size: 50px;
+            animation: floatUp 10s linear infinite;
+            opacity: 0.8;
+            z-index: 1;
+        }
+        
+        /* Different flower colors */
+        .flower-pink {
+            color: #ff9eb5;
+        }
+        
+        .flower-purple {
+            color: #c77dff;
+        }
+        
+        .flower-yellow {
+            color: #ffca3a;
+        }
+        
+        .flower-blue {
+            color: #4cc9f0;
+        }
+        
+        /* Hide loader initially */
+        #loader {
+            display: none;
+        }
+        
+        /* Container for floating elements */
+        #floating-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="loader"></div>
+    <div id="soup-container">
+        <div id="segments"></div>
+        <div id="soup-nav">
+            <span id="soup-prev"><i class="fa fa-arrow-circle-o-left" aria-hidden="true"></i></span>
+            <span id="soup-next"><i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i></span>
+        </div>
+    </div>
+    
+    <!-- Container for floating hearts and flowers -->
+    <div id="floating-container"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            /*
+             * Main variables
+             */
+            var content = [{
+                title: "I Have Crush On You💞🌹!!",
+                desc: ""
+            }, {
+                title: "I Have Crush On You💞🌹!!",
+                desc: "mungkin itu sebuah kalimat yg cukup simple, kalimat yang menyimpan banyak harapan juga keraguan dibaliknya. ada harapan yg ingin rasa suka itu tidak jatuh sendirian, juga ada yg harus disiapkan agar bisa menerima konsekuensinya."
+            }, {
+               title: "",
+               desc: "menyatakan perasaan itu hal yg cukup serius, banyak yg akan dikorbankan termasuk hasil akhirnya melepas hal yg sudah Iama tersimpan itu cukup melegakan dan bukan hal yg mudah.Disini Kuroo cuman mau ungkapin perasaan Kuroo sama Moraa💞🌹,masalah diterima atau ngga itu tergantung Moraa🫶🏻💞🌹 nya and jangan nanyaa Cecee dulu ya hhe,Kuroo juga gak bakal berharap lebih kok"
+            }, {
+                title: "",
+                desc: "Kalau Moraaa Risih Bilang yahh,'I Have Crush On You!!💞🌹',Semisal Moraa udah punya orang yang Moraa Sukaa maaf yaa karna udah confess ke Moraa💞🌹...mungkin segitu aja dari Kuroo,hehe makasih yaa udah mau dibaca."
+            }, {
+                title: "I Have Crush On You!!💞🌹",
+                desc: "Kuroo tunggu Balesannya💞🌹🫶🏻:)"
+            }];
+            var currentPage = 0;
+            
+            //generate content
+            for (var i = 0; i < content.length; i++) {
+                //split content letters to array
+                for (var obj in content[i]) {
+                    //if string
+                    if (typeof content[i][obj] === "string") {
+                        content[i][obj] = content[i][obj].split("");
+                        continue;
+                    }
+                    //if array (grouped text)
+                    else if (typeof content[i][obj] === "object") {
+                        var toPush = [];
+                        for (var j = 0; j < content[i][obj].length; j++) {
+                            for (var k = 0; k < content[i][obj][j].length; k++) {
+                                toPush.push(content[i][obj][j][k]);
+                            }
+                        }
+                        content[i][obj] = toPush;
+                    }
+                }
+                //set text to 
+                $("#segments").append("<div class=\"letters-wrap mutable\"><div class=\"soup-title\"></div><div class=\"soup-desc\"></div></div>");
+                setText();
+                //clone to data
+                $("#segments").append("<div class=\"letters-wrap position-data\"><div class=\"soup-title\"></div><div class=\"soup-desc\"></div></div>");
+                setText();
+            }
+            //initial arrangement
+            arrangeCurrentPage();
+            scrambleOthers();
+            
+            // Start floating elements animation
+            createFloatingElements();
+            
+            /*
+             * Event handlers
+             */
+            $(window).resize(function () {
+                arrangeCurrentPage();
+                scrambleOthers();
+            });
+            $("#soup-prev").hide();
+            $("#soup-prev").click(function () {
+                $("#soup-next").show();
+                currentPage--;
+                if (currentPage === 0) {
+                    $("#soup-prev").hide();
+                }
+                arrangeCurrentPage();
+                scrambleOthers();
+            });
+            $("#soup-next").click(function () {
+                $("#soup-prev").show();
+                currentPage++;
+                if (currentPage === content.length - 1) {
+                    $("#soup-next").hide();
+                }
+                arrangeCurrentPage();
+                scrambleOthers();
+            });
+            
+            /*
+             * Functions
+             */
+            function arrangeCurrentPage() {
+                for (var i = 0; i < content[currentPage].title.length; i++) {
+                    $(".mutable:eq(" + currentPage + ") > .soup-title > .letter").eq(i).css({
+                        left: $(".position-data:eq(" + currentPage + ") > .soup-title > .letter").eq(i).offset().left + "px",
+                        top: $(".position-data:eq(" + currentPage + ") > .soup-title > .letter").eq(i).offset().top + "px",
+                        color: "#111",
+                        zIndex: 9001
+                    });
+                }
+                for (var i = 0; i < content[currentPage].desc.length; i++) {
+                    $(".mutable:eq(" + currentPage + ") > .soup-desc > .letter").eq(i).css({
+                        left: $(".position-data:eq(" + currentPage + ") > .soup-desc > .letter").eq(i).offset().left + "px",
+                        top: $(".position-data:eq(" + currentPage + ") > .soup-desc > .letter").eq(i).offset().top + "px",
+                        color: "#111",
+                        zIndex: 9001
+                    });
+                }
+            }
+            
+            function setText() {
+                var j;
+                for (j = 0; j < content[i].title.length; j++) {
+                    $(".soup-title").last().append("<span class=\"letter\">" + content[i].title[j] + "</span>");
+                }
+                for (j = 0; j < content[i].desc.length; j++) {
+                    $(".soup-desc").last().append("<span class=\"letter\">" + content[i].desc[j] + "</span>");
+                }
+            }
+            
+            function scrambleOthers() {
+                for (var i = 0; i < content.length; i++) {
+                    //don't scramble currentPage
+                    if (currentPage === i)
+                        continue;
+                    var parts = [
+                        ["title", ".soup-title"],
+                        ["desc", ".soup-desc"]
+                    ];
+                    //apply to .title h1s and .desc ps
+                    for (var j = 0; j < parts.length; j++) {
+                        for (var k = 0; k < content[i][parts[j][0]].length; k++) {
+                            //define random position on screen
+                            var randLeft = Math.floor(Math.random() * $(window).width());
+                            var randTop = Math.floor(Math.random() * $(window).height());
+                            //defining boundaries
+                            var offset = $(".position-data").eq(currentPage).offset();
+                            var bounds = {
+                                left: offset.left,
+                                top: offset.top,
+                                right: $(window).width() - offset.left,
+                                bottom: $(window).height() - offset.top
+                            };
+                            var middleX = bounds.left + $(".position-data").eq(currentPage).width() / 2;
+                            var middleY = bounds.top + $(".position-data").eq(currentPage).height() / 2;
+                            //finally, apply all the scrambles
+                            $(".mutable:eq(" + i + ") > " + parts[j][1] + " > .letter").eq(k).css({
+                                left: randLeft,
+                                top: randTop,
+                                color: "#DDD",
+                                zIndex: "initial"
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Function to create floating hearts and flowers
+            function createFloatingElements() {
+                // Create hearts more frequently
+                setInterval(function() {
+                    createHeart();
+                }, 300);
+                
+                // Create flowers less frequently
+                setInterval(function() {
+                    createFlower();
+                }, 700);
+                
+                // Initial batch of hearts
+                for (var i = 0; i < 25; i++) {
+                    setTimeout(createHeart, i * 200);
+                }
+                
+                // Initial batch of flowers
+                for (var i = 0; i < 15; i++) {
+                    setTimeout(createFlower, i * 400);
+                }
+            }
+            
+            // Function to create a single heart - updated with larger size
+            function createHeart() {
+                var heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = '<i class="fa fa-heart" aria-hidden="true"></i>';
+                
+                // Random properties - increased size range
+                var size = Math.random() * 60 + 30; // 30-90px (increased from 10-35px)
+                var leftPos = Math.random() * 100; // 0-100% of screen width
+                var animationDuration = Math.random() * 4 + 4; // 4-8 seconds
+                var opacity = Math.random() * 0.5 + 0.3; // 0.3-0.8 opacity
+                
+                // Apply styles
+                heart.style.fontSize = size + 'px';
+                heart.style.left = leftPos + '%';
+                heart.style.animationDuration = animationDuration + 's';
+                heart.style.opacity = opacity;
+                
+                // Random color variations
+                var colors = ['#ff4d6d', '#ff6b6b', '#ff8e8e', '#ffaaaa', '#ff6b9d', '#ff1744', '#e91e63'];
+                heart.style.color = colors[Math.floor(Math.random() * colors.length)];
+                
+                // Add to container
+                document.getElementById('floating-container').appendChild(heart);
+                
+                // Remove heart after animation completes
+                setTimeout(function() {
+                    heart.remove();
+                }, animationDuration * 1000);
+            }
+            
+            // Function to create a single flower - updated with larger size
+            function createFlower() {
+                var flower = document.createElement('div');
+                
+                // Random flower type
+                var flowerTypes = [
+                    { icon: 'fa-sun-o', class: 'flower-yellow' },
+                    { icon: 'fa-leaf', class: 'flower-pink' },
+                    { icon: 'fa-pagelines', class: 'flower-purple' },
+                    { icon: 'fa-tree', class: 'flower-blue' }
+                ];
+                
+                var randomFlower = flowerTypes[Math.floor(Math.random() * flowerTypes.length)];
+                
+                flower.className = 'flower ' + randomFlower.class;
+                flower.innerHTML = '<i class="fa ' + randomFlower.icon + '" aria-hidden="true"></i>';
+                
+                // Random properties - increased size range
+                var size = Math.random() * 70 + 40; // 40-110px (increased from 15-45px)
+                var leftPos = Math.random() * 100; // 0-100% of screen width
+                var animationDuration = Math.random() * 6 + 6; // 6-12 seconds
+                var opacity = Math.random() * 0.6 + 0.4; // 0.4-1.0 opacity
+                
+                // Apply styles
+                flower.style.fontSize = size + 'px';
+                flower.style.left = leftPos + '%';
+                flower.style.animationDuration = animationDuration + 's';
+                flower.style.opacity = opacity;
+                
+                // Add to container
+                document.getElementById('floating-container').appendChild(flower);
+                
+                // Remove flower after animation completes
+                setTimeout(function() {
+                    flower.remove();
+                }, animationDuration * 1000);
+            }
+        });
+    </script>
+</body>
+</html>
